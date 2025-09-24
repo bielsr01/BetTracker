@@ -6,6 +6,8 @@ export default function BetCardExample() {
   const mockBet: Bet = {
     id: '1',
     bettingHouse: 'Bet365',
+    sport: 'Futebol',
+    league: 'La Liga',
     teamA: 'Barcelona',
     teamB: 'Real Madrid',
     betType: '1x2 - Vitória do Mandante',
@@ -13,6 +15,7 @@ export default function BetCardExample() {
     odds: '2.75',
     stake: '150.00',
     payout: '412.50',
+    profit: '137.50',
     gameDate: new Date('2024-12-15T20:00:00'),
     status: 'pending',
     isVerified: true,
@@ -27,6 +30,8 @@ export default function BetCardExample() {
   const mockPairedBet: Bet = {
     id: '2',
     bettingHouse: 'Betano',
+    sport: 'Futebol',
+    league: 'La Liga',
     teamA: 'Barcelona',
     teamB: 'Real Madrid',
     betType: '1x2 - Vitória do Visitante',
@@ -34,6 +39,7 @@ export default function BetCardExample() {
     odds: '3.20',
     stake: '125.00',
     payout: '400.00',
+    profit: '125.00',
     gameDate: new Date('2024-12-15T20:00:00'),
     status: 'pending',
     isVerified: true,

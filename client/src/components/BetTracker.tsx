@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Home, Upload, BarChart3, Settings, Target } from 'lucide-react';
 import { OCRData, Bet } from '@shared/schema';
@@ -9,36 +9,62 @@ import { ThemeToggle } from './ThemeToggle';
 
 type AppState = 'upload' | 'verification' | 'dashboard';
 
-// Mock OCR function //todo: remove mock functionality
-const mockOCRProcess = (file: File): Promise<OCRData> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        betA: {
-          bettingHouse: 'Bet365',
-          teamA: 'Barcelona',
-          teamB: 'Real Madrid',
-          betType: '1x2 - Vitória do Mandante',
-          selectedSide: 'A',
-          odds: '2.75',
-          stake: '150.00',
-          payout: '412.50'
-        },
-        betB: {
-          bettingHouse: 'Betano',
-          teamA: 'Barcelona',
-          teamB: 'Real Madrid',
-          betType: '1x2 - Vitória do Visitante',
-          selectedSide: 'B',
-          odds: '3.20',
-          stake: '125.00',
-          payout: '400.00'
-        },
-        gameDate: new Date('2024-12-15T20:00:00'),
-        gameTime: '20:00'
-      });
-    }, 2000);
+// Real OCR processing using the API
+const processOCR = async (file: File): Promise<OCRData> => {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  const response = await fetch('/api/ocr/process', {
+    method: 'POST',
+    body: formData
   });
+  
+  if (!response.ok) {
+    throw new Error('Failed to process OCR');
+  }
+  
+  return response.json();
+};
+
+// API functions
+const fetchBets = async (): Promise<Bet[]> => {
+  const response = await fetch('/api/bets');
+  if (!response.ok) {
+    throw new Error('Failed to fetch bets');
+  }
+  return response.json();
+};
+
+const saveBets = async (ocrData: OCRData): Promise<{ success: boolean; bets: Bet[]; pairId: string }> => {
+  const response = await fetch('/api/bets', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(ocrData)
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to save bets');
+  }
+  
+  return response.json();
+};
+
+const updateBetStatus = async (betId: string, status: 'pending' | 'won' | 'lost' | 'returned'): Promise<Bet> => {
+  const response = await fetch(`/api/bets/${betId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ status })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to update bet status');
+  }
+  
+  return response.json();
 };
 
 export default function BetTracker() {
@@ -46,7 +72,27 @@ export default function BetTracker() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('');
   const [currentOCRData, setCurrentOCRData] = useState<OCRData | null>(null);
-  const [bets, setBets] = useState<Bet[]>([]); //todo: remove mock functionality - replace with API calls
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load bets on component mount
+  useEffect(() => {
+    const loadBets = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedBets = await fetchBets();
+        setBets(fetchedBets);
+      } catch (error) {
+        console.error('Failed to load bets:', error);
+        setError('Falha ao carregar apostas');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadBets();
+  }, []);
 
   // Sidebar navigation items
   const sidebarItems = [
@@ -72,88 +118,53 @@ export default function BetTracker() {
 
   const handleImageUpload = async (file: File) => {
     setIsProcessing(true);
+    setError(null);
     
     // Create image URL for preview
     const imageUrl = URL.createObjectURL(file);
     setCurrentImageUrl(imageUrl);
     
     try {
-      // Mock OCR processing //todo: replace with actual OCR
-      const ocrData = await mockOCRProcess(file);
+      // Real OCR processing using the API
+      const ocrData = await processOCR(file);
       setCurrentOCRData(ocrData);
       setCurrentState('verification');
     } catch (error) {
       console.error('OCR processing failed:', error);
-      // Handle error - could show toast notification
+      setError('Falha ao processar a imagem. Tente novamente.');
+      setCurrentState('upload');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleOCRConfirm = (data: OCRData) => {
-    // Generate pair ID for the two bets
-    const pairId = Math.random().toString(36).substr(2, 9);
+  const handleOCRConfirm = async (data: OCRData) => {
+    setIsLoading(true);
+    setError(null);
     
-    // Calculate pair metrics
-    const stakeA = Number(data.betA.stake);
-    const stakeB = Number(data.betB.stake);
-    const payoutA = Number(data.betA.payout);
-    const payoutB = Number(data.betB.payout);
-    const totalStake = stakeA + stakeB;
-    // Profit percentage if this bet wins: (winning payout - total invested) / total invested
-    const profitPercentageA = totalStake > 0 ? ((payoutA - totalStake) / totalStake) * 100 : 0;
-    const profitPercentageB = totalStake > 0 ? ((payoutB - totalStake) / totalStake) * 100 : 0;
-    
-    // Create bet A //todo: replace with API call
-    const betA: Bet = {
-      id: Math.random().toString(36).substr(2, 9),
-      bettingHouse: data.betA.bettingHouse,
-      teamA: data.betA.teamA,
-      teamB: data.betA.teamB,
-      betType: data.betA.betType,
-      selectedSide: data.betA.selectedSide,
-      odds: data.betA.odds,
-      stake: data.betA.stake,
-      payout: data.betA.payout,
-      gameDate: data.gameDate,
-      status: 'pending',
-      isVerified: true,
-      pairId: pairId,
-      betPosition: 'A',
-      totalPairStake: totalStake.toString(),
-      profitPercentage: profitPercentageA.toString(),
-      createdAt: new Date()
-    };
-    
-    // Create bet B //todo: replace with API call
-    const betB: Bet = {
-      id: Math.random().toString(36).substr(2, 9),
-      bettingHouse: data.betB.bettingHouse,
-      teamA: data.betB.teamA,
-      teamB: data.betB.teamB,
-      betType: data.betB.betType,
-      selectedSide: data.betB.selectedSide,
-      odds: data.betB.odds,
-      stake: data.betB.stake,
-      payout: data.betB.payout,
-      gameDate: data.gameDate,
-      status: 'pending',
-      isVerified: true,
-      pairId: pairId,
-      betPosition: 'B',
-      totalPairStake: totalStake.toString(),
-      profitPercentage: profitPercentageB.toString(),
-      createdAt: new Date()
-    };
-    
-    setBets(prev => [betA, betB, ...prev]);
-    
-    // Clean up and navigate to dashboard
-    setCurrentImageUrl('');
-    setCurrentOCRData(null);
-    setCurrentState('dashboard');
-    
-    console.log('Bet pair saved:', { betA, betB });
+    try {
+      // Save bets using the API
+      const result = await saveBets(data);
+      
+      if (result.success) {
+        // Update local state with the new bets
+        setBets(prev => [...result.bets, ...prev]);
+        
+        // Clean up and navigate to dashboard
+        setCurrentImageUrl('');
+        setCurrentOCRData(null);
+        setCurrentState('dashboard');
+        
+        console.log('Bet pair saved successfully:', result);
+      } else {
+        throw new Error('Failed to save bets');
+      }
+    } catch (error) {
+      console.error('Failed to save bets:', error);
+      setError('Falha ao salvar as apostas. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOCRCancel = () => {
@@ -162,32 +173,43 @@ export default function BetTracker() {
     setCurrentState('upload');
   };
 
-  const handleResolveBet = (betId: string, status: 'won' | 'lost' | 'returned') => {
-    //todo: replace with API call
-    setBets(prev => {
-      const updatedBets = prev.map(bet => {
-        if (bet.id === betId) {
-          return { ...bet, status };
+  const handleResolveBet = async (betId: string, status: 'won' | 'lost' | 'returned') => {
+    try {
+      // Update bet status using the API
+      const updatedBet = await updateBetStatus(betId, status);
+      
+      // Update local state
+      setBets(prev => {
+        const updatedBets = prev.map(bet => {
+          if (bet.id === betId) {
+            return updatedBet;
+          }
+          return bet;
+        });
+        
+        // If this bet won, automatically set its pair to lost (for opposing bets)
+        if (status === 'won') {
+          const resolvedBet = prev.find(bet => bet.id === betId);
+          if (resolvedBet?.pairId) {
+            return updatedBets.map(bet => {
+              if (bet.pairId === resolvedBet.pairId && bet.id !== betId && bet.status === 'pending') {
+                // Also update the paired bet status in the backend
+                updateBetStatus(bet.id, 'lost').catch(console.error);
+                return { ...bet, status: 'lost' };
+              }
+              return bet;
+            });
+          }
         }
-        return bet;
+        
+        return updatedBets;
       });
       
-      // If this bet won, automatically set its pair to lost (for opposing bets)
-      if (status === 'won') {
-        const resolvedBet = prev.find(bet => bet.id === betId);
-        if (resolvedBet?.pairId) {
-          return updatedBets.map(bet => {
-            if (bet.pairId === resolvedBet.pairId && bet.id !== betId && bet.status === 'pending') {
-              return { ...bet, status: 'lost' };
-            }
-            return bet;
-          });
-        }
-      }
-      
-      return updatedBets;
-    });
-    console.log(`Bet ${betId} resolved as: ${status}`);
+      console.log(`Bet ${betId} resolved as: ${status}`);
+    } catch (error) {
+      console.error('Failed to update bet status:', error);
+      setError('Falha ao atualizar status da aposta');
+    }
   };
 
   const handleAddBet = () => {
