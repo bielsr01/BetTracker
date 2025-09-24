@@ -12,13 +12,16 @@ export const users = pgTable("users", {
 export const bets = pgTable("bets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   bettingHouse: text("betting_house").notNull(),
-  teamA: text("team_a").notNull(), // First team
-  teamB: text("team_b").notNull(), // Second team
-  betType: text("bet_type").notNull(),
+  sport: text("sport").notNull(), // Sport name (e.g., "Tênis")
+  league: text("league").notNull(), // League/tournament (e.g., "ATP - Hangzhou, China")
+  teamA: text("team_a").notNull(), // First team/player
+  teamB: text("team_b").notNull(), // Second team/player
+  betType: text("bet_type").notNull(), // Type of bet (e.g., "Acima 8.5 1º o set")
   selectedSide: text("selected_side", { enum: ["A", "B"] }).notNull(), // Which side was bet on (A = teamA, B = teamB)
   odds: decimal("odds", { precision: 10, scale: 2 }).notNull(),
   stake: decimal("stake", { precision: 10, scale: 2 }).notNull(),
   payout: decimal("payout", { precision: 10, scale: 2 }).notNull(),
+  profit: decimal("profit", { precision: 10, scale: 2 }).notNull(), // Calculated profit if this bet wins
   gameDate: timestamp("game_date").notNull().default(sql`now()`),
   status: text("status", { enum: ["pending", "won", "lost", "returned"] }).notNull().default("pending"),
   isVerified: boolean("is_verified").notNull().default(false),
@@ -47,13 +50,16 @@ export type Bet = typeof bets.$inferSelect;
 // OCR extracted data for a single bet
 export const singleBetOCRSchema = z.object({
   bettingHouse: z.string().min(1, "Casa de aposta é obrigatória"),
-  teamA: z.string().min(1, "Time A é obrigatório"),
-  teamB: z.string().min(1, "Time B é obrigatório"),
+  sport: z.string().min(1, "Esporte é obrigatório"),
+  league: z.string().min(1, "Liga/Torneio é obrigatório"),
+  teamA: z.string().min(1, "Time/Jogador A é obrigatório"),
+  teamB: z.string().min(1, "Time/Jogador B é obrigatório"),
   betType: z.string().min(1, "Tipo de aposta é obrigatório"),
   selectedSide: z.enum(["A", "B"], { errorMap: () => ({ message: "Lado selecionado deve ser A ou B" }) }),
   odds: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Odd deve ser um número válido"),
   stake: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Valor da aposta deve ser um número válido"),
   payout: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Retorno deve ser um número válido"),
+  profit: z.string().refine((val) => !isNaN(Number(val)), "Lucro deve ser um número válido"),
 });
 
 // OCR extracted data for paired bets (two opposing bets)
