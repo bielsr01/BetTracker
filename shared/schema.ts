@@ -68,6 +68,7 @@ export const ocrDataSchema = z.object({
   betB: singleBetOCRSchema,
   gameDate: z.date(),
   gameTime: z.string().optional(),
+  totalProfitPercentage: z.string().optional(), // Total profit percentage for the pair
 }).refine(
   (data) => {
     // Ensure teams are consistent across both bets (normalized comparison)

@@ -34,6 +34,8 @@ export default function OCRVerification({
     
     // Validate Bet A
     if (!formData.betA.bettingHouse.trim()) newErrors['betA.bettingHouse'] = 'Casa de aposta é obrigatória';
+    if (!formData.betA.sport.trim()) newErrors['betA.sport'] = 'Esporte é obrigatório';
+    if (!formData.betA.league.trim()) newErrors['betA.league'] = 'Liga é obrigatória';
     if (!formData.betA.teamA.trim()) newErrors['betA.teamA'] = 'Time A é obrigatório';
     if (!formData.betA.teamB.trim()) newErrors['betA.teamB'] = 'Time B é obrigatório';
     if (!formData.betA.betType.trim()) newErrors['betA.betType'] = 'Tipo de aposta é obrigatório';
@@ -49,6 +51,8 @@ export default function OCRVerification({
 
     // Validate Bet B
     if (!formData.betB.bettingHouse.trim()) newErrors['betB.bettingHouse'] = 'Casa de aposta é obrigatória';
+    if (!formData.betB.sport.trim()) newErrors['betB.sport'] = 'Esporte é obrigatório';
+    if (!formData.betB.league.trim()) newErrors['betB.league'] = 'Liga é obrigatória';
     if (!formData.betB.teamA.trim()) newErrors['betB.teamA'] = 'Time A é obrigatório';
     if (!formData.betB.teamB.trim()) newErrors['betB.teamB'] = 'Time B é obrigatório';
     if (!formData.betB.betType.trim()) newErrors['betB.betType'] = 'Tipo de aposta é obrigatório';
@@ -133,6 +137,38 @@ export default function OCRVerification({
             )}
           </div>
 
+          {/* Sport and League */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor={`${bet}-sport`}>Esporte</Label>
+              <Input
+                id={`${bet}-sport`}
+                value={betData.sport}
+                onChange={(e) => updateBetField(bet, 'sport', e.target.value)}
+                placeholder="Ex: Futebol, Tênis..."
+                className={errors[`${bet}.sport`] ? 'border-destructive' : ''}
+                data-testid={`input-${bet}-sport`}
+              />
+              {errors[`${bet}.sport`] && (
+                <p className="text-sm text-destructive">{errors[`${bet}.sport`]}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${bet}-league`}>Liga/Campeonato</Label>
+              <Input
+                id={`${bet}-league`}
+                value={betData.league}
+                onChange={(e) => updateBetField(bet, 'league', e.target.value)}
+                placeholder="Ex: Premier League, ATP..."
+                className={errors[`${bet}.league`] ? 'border-destructive' : ''}
+                data-testid={`input-${bet}-league`}
+              />
+              {errors[`${bet}.league`] && (
+                <p className="text-sm text-destructive">{errors[`${bet}.league`]}</p>
+              )}
+            </div>
+          </div>
+
           {/* Teams */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
@@ -196,7 +232,7 @@ export default function OCRVerification({
           </div>
 
           {/* Financial Data */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="space-y-2">
               <Label htmlFor={`${bet}-odds`}>Odd</Label>
               <Input
@@ -247,6 +283,23 @@ export default function OCRVerification({
                 <p className="text-sm text-destructive">{errors[`${bet}.payout`]}</p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`${bet}-profit`}>Lucro (R$)</Label>
+              <Input
+                id={`${bet}-profit`}
+                type="number"
+                step="0.01"
+                value={betData.profit}
+                onChange={(e) => updateBetField(bet, 'profit', e.target.value)}
+                placeholder="3.25"
+                className={errors[`${bet}.profit`] ? 'border-destructive' : ''}
+                data-testid={`input-${bet}-profit`}
+              />
+              {errors[`${bet}.profit`] && (
+                <p className="text-sm text-destructive">{errors[`${bet}.profit`]}</p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -262,6 +315,25 @@ export default function OCRVerification({
             <div className="space-y-2">
               {errors.teams && <p className="text-sm text-destructive">⚠️ {errors.teams}</p>}
               {errors.sides && <p className="text-sm text-destructive">⚠️ {errors.sides}</p>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Total Profit Percentage - Read Only */}
+      {formData.totalProfitPercentage && (
+        <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">Lucro Total da Aposta Combinada</p>
+                <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-300">
+                  {formData.totalProfitPercentage}%
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  (Considerando que apenas uma aposta ganha e a outra perde)
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
