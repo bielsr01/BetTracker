@@ -1,0 +1,57 @@
+Descrição:
+
+Este projeto é uma aplicação web interativa desenvolvida para gerenciar e rastrear apostas esportivas de forma eficiente. O principal objetivo é automatizar a entrada de dados usando screenshots de comprovantes de aposta e fornecer ferramentas para análise e acompanhamento do desempenho.
+
+Funcionalidades Principais:
+
+Entrada de Dados por Imagem:
+
+A interface inicial deve permitir que o usuário faça o upload de uma imagem (screenshot) ou simplesmente cole (Ctrl+V) uma imagem diretamente na tela.
+
+O sistema deve processar a imagem usando tecnologia de Reconhecimento Óptico de Caracteres (OCR) para extrair as seguintes informações:
+
+Casa de aposta: Nome da plataforma (ex: Bet365, Betano).
+
+Tipo de aposta: (ex: 1x2, Ambas Marcam).
+
+Odd da aposta: Valor decimal da cotação.
+
+Valor da aposta: Quantia investida.
+
+Lucro da aposta: Valor de retorno potencial.
+
+Após o processamento da imagem, o sistema deve exibir os dados extraídos em campos editáveis para que o usuário possa revisá-los e, se necessário, corrigir.
+
+Inserção de Dados Adicionais:
+
+Logo após o carregamento da imagem, o sistema deve solicitar que o usuário insira a data e o horário do jogo.
+
+Gerenciamento de Apostas:
+
+Cada conjunto de dados extraído de uma imagem representa um "conjunto único" de duas apostas (conforme a sua descrição, onde uma ganha e a outra perde).
+
+O sistema deve apresentar um painel com todas as apostas carregadas.
+
+Nesse painel, deve haver uma opção para marcar a aposta como "resolvida" em uma das duas casas de aposta. Ao marcar, o sistema deve:
+
+Registrar que a aposta associada a essa casa foi a ganhadora.
+
+Automaticamente calcular e atualizar o lucro total para esse conjunto de apostas (lucro da aposta ganhadora menos o valor da aposta perdida).
+
+O sistema deve ter as seguintes opções para categorizar o resultado da aposta:
+
+Ganhou: Marca a aposta como vitoriosa.
+
+Perdeu: Marca a aposta como perdedora.
+
+Devolvido: Marca a aposta com o valor devolvido (cashout, void, etc.).
+
+Filtros e Relatórios:
+
+A aplicação deve conter uma aba de filtros para que o usuário possa segmentar as apostas e visualizar o desempenho. Os filtros devem incluir:
+
+Status da aposta: Filtrar por apostas pendentes.
+
+Valores: Filtrar por valor apostado e lucro.
+
+Período: Filtrar por dia, semana ou mês.
